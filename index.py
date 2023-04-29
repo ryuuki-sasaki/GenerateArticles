@@ -70,7 +70,7 @@ def GenerateArticle():
         summary = SummarizeText(docs)
 
     # systemメッセージプロンプトテンプレートの準備
-    template="これからテキストを複数に分割して渡しますので、私が「まとめてください」というまでは、作業を始めないでください。代わりに「次の入力を待っています」とだけ出力してください。"
+    template="これからテキストを複数に分割して渡しますので、私が「これで全ての文章を渡しました。」というまでは、作業を始めないでください。代わりに「次の入力を待っています」とだけ出力してください。"
     # chatプロンプトテンプレートの準備
     prompt = ChatPromptTemplate.from_messages([
         SystemMessagePromptTemplate.from_template(template),
@@ -91,10 +91,13 @@ def GenerateArticle():
     else:
         for doc in docs:
             conversation_with_summary.predict(input=doc.page_content + "\n\n上記の文章は全体のテキストの一部です。まだまとめないでください")
-    conversation_with_summary.predict(input="これで全ての文章を渡しました。これらをまとめてください。")
+    conversation_with_summary.predict(input="これで全ての文章を渡しました。この文章からタイトルとまとめを生成してください。")
     res = conversation_with_summary.predict(input="この文章のキーワードを重要度の高い順に3つ挙げてください。")
     print(res)
-
-
-
-GenerateArticle()
+    
+    tools = load_tools(["google-search"], llm=openAI)
+    agent = initialize_agent(tools, openAI, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION)
+    ret = agent.run(
+        f"{res}に関連する情報を検策してまとめてください。検策を行う際は検策先URLを覚えておいてください。最後に検索に使用したURLをリストで教えてください。"
+    )
+    print(ret)
