@@ -15,13 +15,11 @@ if OPENAI_API_KEY is None:
 
 llm = OpenAI(temperature=0)
 
-urls = [
-    "https://prtimes.jp/main/html/rd/p/000000042.000045103.html",
-]
-
-loader = SeleniumURLLoader(urls=urls)
-
-data = loader.load()
+# urlsを受け取って、Seleniumでページを開いて、ページの内容を返す。
+def GetPageContent(urls):
+    loader = SeleniumURLLoader(urls=urls)
+    data = loader.load()
+    return data[0].page_content
 
 # 余計な空白と改行を一つの空白に置き換える関数
 # GPT-3は空白もトークンとしてカウントされるらしいので、余計な空白や改行を削除する。
@@ -37,7 +35,11 @@ def SummarizeText(docs):
     return summary
 
 def GenerateArticle():
-    text = remove_space_and_newline(data[0].page_content) 
+    urls = [
+        "https://prtimes.jp/main/html/rd/p/000000042.000045103.html",
+    ]
+    content = GetPageContent(urls)
+    text = remove_space_and_newline(content) 
     text_splitter = CharacterTextSplitter(        
         separator = " ",
         chunk_size = 1000,
