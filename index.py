@@ -1,4 +1,10 @@
 import time
+from flask import (
+    Flask,
+    render_template,
+    request,
+)
+from urllib.parse import urlparse
 from langchain.chat_models import ChatOpenAI
 from langchain.llms import OpenAI
 from langchain.agents import (
@@ -52,10 +58,7 @@ def SummarizeText(docs):
     summary = chain.run(docs)
     return summary
 
-def GenerateArticle():
-    urls = [
-        "https://prtimes.jp/main/html/rd/p/000000042.000045103.html",
-    ]
+def GenerateArticle(urls):
     content = GetPageContent(urls)
     text = remove_space_and_newline(content) 
     text_splitter = CharacterTextSplitter(        
@@ -77,8 +80,10 @@ def GenerateArticle():
         MessagesPlaceholder(variable_name="history"),
         HumanMessagePromptTemplate.from_template("{input}")
     ])
-    # メモリの準備(トークン上限は2000,超過した分は要約される)
-    memory = ConversationSummaryBufferMemory(llm=openAI, max_token_limit=2000, return_messages=True)
+    # メモリの準備(トークン上限は3500,超過した分は要約される)
+    # 実行してみた結果、内容のほとんどが日本語のテキストを扱う場合はうまく要約できない。(基本「System: N/A (Please provide a conversation in English for me to summarize」と出漁される)
+    # ためしに英語記事のページを読み込ませた場合は要約できる。
+    memory = ConversationSummaryBufferMemory(llm=openAIChat, max_token_limit=3500, return_messages=True)
     conversation_with_summary = ConversationChain(
         llm=openAIChat, 
         prompt=prompt,
@@ -91,13 +96,36 @@ def GenerateArticle():
     else:
         for doc in docs:
             conversation_with_summary.predict(input=doc.page_content + "\n\n上記の文章は全体のテキストの一部です。まだまとめないでください")
-    conversation_with_summary.predict(input="これで全ての文章を渡しました。この文章からタイトルとまとめを生成してください。")
-    res = conversation_with_summary.predict(input="この文章のキーワードを重要度の高い順に3つ挙げてください。")
-    print(res)
+    main_contents = conversation_with_summary.predict(input="これで全ての文章を渡しました。この文章からタイトルとまとめとポイントを5個生成してください。")
+    keywords = conversation_with_summary.predict(input="この文章のキーワードを重要度の高い順に3つ挙げてください。")
     
     tools = load_tools(["google-search"], llm=openAI)
     agent = initialize_agent(tools, openAI, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION)
-    ret = agent.run(
-        f"{res}に関連する情報を検策してまとめてください。検策を行う際は検策先URLを覚えておいてください。最後に検索に使用したURLをリストで教えてください。"
+    similar_information = agent.run(
+        f"{keywords}に関連する情報を検策してまとめてください。"
     )
-    print(ret)
+
+    return render_template("article.html", main_contents=main_contents, keywords=keywords, similar_information=similar_information)
+
+# 入力がURLのフォーマットに則っているかをチェックする
+def isValidUrl(url):
+    try:
+        result = urlparse(url)
+        return all([result.scheme, result.netloc])
+    except ValueError:
+        return False
+
+
+app = Flask(__name__)
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route("/result", methods=["POST"])
+def result():
+    url = request.form["url"]
+    if isValidUrl(url):
+        return GenerateArticle([url])
+    else:
+        return "URLのフォーマットが正しくありません。"
