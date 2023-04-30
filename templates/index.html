@@ -5,9 +5,14 @@
   </head>
   <body>
     <h1>URLを入力してください</h1>
-    <form action="/result" method="post">
+    <form onsubmit="disableButton();" action="/result" method="post">
       <input type="text" name="url" />
-      <input type="submit" value="送信" />
+      <input type="submit"  id="submitButton" value="送信" />
     </form>
   </body>
+  <script>
+    function disableButton() {
+        document.getElementById("submitButton").disabled = true;
+    }
+  </script>
 </html>

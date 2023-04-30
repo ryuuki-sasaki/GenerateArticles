@@ -1,17 +1,42 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>生成記事</title>
+  <link rel="stylesheet" href="/static/css/article.css" type="text/css">
+
+  <title>{{ title }}</title>
 </head>
+
 <body>
-  <h1>メインコンテンツ</h1>
-  {{ main_contents }}
-  <h1>キーワード</h1>
-  {{ keywords }}
-  <h1>類似情報</h1>
-  {{ similar_information }}
+  <main id="article">
+    <h1 class="title">{{ title }}</h1>
+    <section>
+      <p>{{ main_contents }}</p>
+    </section>
+    <section>
+      <h3 class="senction-title">ポイント</h3>
+      <ul class="points">
+        {% for point in points %}
+          <li>{{ point }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+    <section>
+      <h3 class="senction-title">キーワード</h3>
+      <p>{{ keywords }}</p>
+    </section>
+    <section>
+      <h3 class="senction-title">関連情報</h3>
+      <p>{{ similar_information }}</p>
+    </section>
+    <section>
+      <h3 class="senction-title">参考元URL</h3>
+      <p><a href="{{ url }}">{{ url }}</p>
+    </section>
+  </main>
 </body>
+
 </html>

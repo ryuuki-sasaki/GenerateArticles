@@ -1,0 +1,36 @@
+#article {
+  width: 70%;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+#article .title {
+  padding: 20px;
+  border-bottom: dashed 1px black;
+}
+
+#article .senction-title {
+  padding: 20px;
+  border-bottom: solid 1px black;
+  border-left: solid 20px black;
+}
+
+#article .main-comtent {
+}
+
+#article .points {
+}
+
+#article .points > li {
+  list-style-type: decimal;
+  padding: 20px;
+  border-bottom: solid 1px black;
+  margin-bottom: 20px;
+}
+
+#article > .similar-information {
+}
+
+section p {
+  padding: 20px;
+}

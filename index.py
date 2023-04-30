@@ -58,6 +58,17 @@ def SummarizeText(docs):
     summary = chain.run(docs)
     return summary
 
+def GetBetweenRegex(text, start, end):
+    text_column_acquisition_range = r'(.*?)' 
+    if end == "":
+        text_column_acquisition_range = r'(.*)' 
+    pattern = re.compile(re.escape(start) + text_column_acquisition_range + re.escape(end), re.DOTALL)
+    match = pattern.search(text)
+    if match:
+        return match.group(1)
+    else:
+        return ''
+
 def GenerateArticle(urls):
     content = GetPageContent(urls)
     text = remove_space_and_newline(content) 
@@ -96,16 +107,22 @@ def GenerateArticle(urls):
     else:
         for doc in docs:
             conversation_with_summary.predict(input=doc.page_content + "\n\n上記の文章は全体のテキストの一部です。まだまとめないでください")
-    main_contents = conversation_with_summary.predict(input="これで全ての文章を渡しました。この文章からタイトルとまとめとポイントを5個生成してください。")
-    keywords = conversation_with_summary.predict(input="この文章のキーワードを重要度の高い順に3つ挙げてください。")
-    
+    main_contents = conversation_with_summary.predict(input="これで全ての文章を渡しました。この文章からタイトルとまとめとポイントを生成してください。まとめには【Content】、タイトルには【Title】、ポイントには【Point】というプレフィックスを入れてください。必ず【Content】【Title】【Point】の順で出力して下さい")
+    keywords = conversation_with_summary.predict(input="【Keyword】というプレフィックスの後にこの文章のキーワードを重要度の高い順に3つ挙げてください。")
     tools = load_tools(["google-search"], llm=openAI)
     agent = initialize_agent(tools, openAI, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION)
     similar_information = agent.run(
-        f"{keywords}に関連する情報を検策してまとめてください。"
+        f"{keywords}に関連する情報を検策して日本語でまとめてください。"
     )
-
-    return render_template("article.html", main_contents=main_contents, keywords=keywords, similar_information=similar_information)
+    # 記事のHTMLの生成もChatGPTに任せたいが、プロンプトが詳細になるほとトークンの数が増えていくので、今回はある程度自前で生成する。
+    return render_template("article.html",
+                           title=GetBetweenRegex(main_contents, "【Title】", "【Content】"),
+                           main_contents=GetBetweenRegex(main_contents, "【Content】", "【Point】"),
+                           points=[line for line in GetBetweenRegex(main_contents, "【Point】", "").split("\n") if line.strip()],
+                           keywords=GetBetweenRegex(keywords, "【Keyword】", ""),
+                           similar_information=similar_information,
+                           url=urls[0],
+                           )
 
 # 入力がURLのフォーマットに則っているかをチェックする
 def isValidUrl(url):
@@ -129,3 +146,6 @@ def result():
         return GenerateArticle([url])
     else:
         return "URLのフォーマットが正しくありません。"
+
+if __name__ == "__main__":
+    app.run(debug=True, use_reloader=True)
