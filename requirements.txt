@@ -1,0 +1,8 @@
+langchain
+openai
+python-dotenv
+selenium
+unstructured
+tiktoken
+google-api-python-client
+flask
