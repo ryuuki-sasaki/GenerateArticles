@@ -107,7 +107,7 @@ def GenerateArticle(urls):
     else:
         for doc in docs:
             conversation_with_summary.predict(input=doc.page_content + "\n\n上記の文章は全体のテキストの一部です。まだまとめないでください")
-    main_contents = conversation_with_summary.predict(input="これで全ての文章を渡しました。この文章からタイトルとまとめとポイントを生成してください。まとめには【Content】、タイトルには【Title】、ポイントには【Point】というプレフィックスを入れてください。必ず【Content】【Title】【Point】の順で出力して下さい")
+    main_contents = conversation_with_summary.predict(input="これで全ての文章を渡しました。この文章からタイトルとまとめとポイントを日本語で生成してください。まとめには【Content】、タイトルには【Title】、ポイントには【Point】というプレフィックスを入れてください。必ず【Content】【Title】【Point】の順で出力して下さい")
     keywords = conversation_with_summary.predict(input="【Keyword】というプレフィックスの後にこの文章のキーワードを重要度の高い順に3つ挙げてください。")
     tools = load_tools(["google-search"], llm=openAI)
     agent = initialize_agent(tools, openAI, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION)
