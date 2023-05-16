@@ -71,17 +71,19 @@ def GetBetweenRegex(text, start, end):
 
 def GenerateArticle(urls):
     content = GetPageContent(urls)
-    text = remove_space_and_newline(content) 
-    text_splitter = CharacterTextSplitter(        
-        separator = " ",
-        chunk_size = 1000,
-    )
-    docs = text_splitter.create_documents([text])
+    text = remove_space_and_newline(content)
 
     # テキストのサイズが定数文字を超えるなら文章を要約する
-    summary = ""
     if len(text) > TEXT_SIZE_LIMIT:
-        summary = SummarizeText(docs)
+        print("文章が長いので要約します。")
+        # テキストを空白文字で分割後、1000文字ずつのDocumentの配列になるように連結する。 
+        text_splitter = CharacterTextSplitter(        
+            separator = " ",
+            chunk_size = 1000,
+        )
+        docs = text_splitter.create_documents([text])
+        # 要約する
+        text = SummarizeText(docs)
 
     # systemメッセージプロンプトテンプレートの準備
     template="これからテキストを複数に分割して渡しますので、私が「これで全ての文章を渡しました。」というまでは、作業を始めないでください。代わりに「次の入力を待っています」とだけ出力してください。"
@@ -101,12 +103,7 @@ def GenerateArticle(urls):
         memory=memory,
         verbose=True,
     )
-    
-    if summary != "":
-        conversation_with_summary.predict(input=summary)
-    else:
-        for doc in docs:
-            conversation_with_summary.predict(input=doc.page_content + "\n\n上記の文章は全体のテキストの一部です。まだまとめないでください")
+    conversation_with_summary.predict(input=text)
     main_contents = conversation_with_summary.predict(input="これで全ての文章を渡しました。この文章からタイトルとまとめとポイントを日本語で生成してください。まとめには【Content】、タイトルには【Title】、ポイントには【Point】というプレフィックスを入れてください。必ず【Content】【Title】【Point】の順で出力して下さい")
     keywords = conversation_with_summary.predict(input="【Keyword】というプレフィックスの後にこの文章のキーワードを重要度の高い順に3つ挙げてください。")
     tools = load_tools(["google-search"], llm=openAI)
